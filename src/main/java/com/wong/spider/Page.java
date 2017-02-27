@@ -1,102 +1,186 @@
 package com.wong.spider;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-
 
 import com.wong.spider.movie.ResultItems;
 
 public class Page {
-	
-	private String url;
+
+	private Request request;
 	private String rawText;
+	private byte[] data;// 文件对象的byte数组
 	private ResultItems resultItems = new ResultItems();
 	private int statusCode;
-	private List<String> targetRequests = new ArrayList<String>();
+	private List<Request> targetRequest = new ArrayList<Request>();
 	private boolean needCycleRequest = false;
-	
-	/**
-	 * @return the url
-	 */
-	public String getUrl() {
-		return url;
-	}
-	/**
-	 * @param url the url to set
-	 */
-	public void setUrl(String url) {
-		this.url = url;
-	}
+	private long contentLength;// 当请求对象为一个文件时，需要设置此字段，以确定请求的文件是完整的
+	private boolean isSkip = false;
+
 	/**
 	 * @return the rawText
 	 */
 	public String getRawText() {
 		return rawText;
 	}
+
 	/**
-	 * @param rawText the rawText to set
+	 * @param rawText
+	 *            the rawText to set
 	 */
-	public void setRawText(String rawText) {
+	public Page setRawText(String rawText) {
 		this.rawText = rawText;
+		return this;
 	}
+
 	/**
 	 * @return the resultItems
 	 */
 	public ResultItems getResultItems() {
 		return resultItems;
 	}
+
 	/**
-	 * @param resultItems the resultItems to set
+	 * @param resultItems
+	 *            the resultItems to set
 	 */
 	public void setResultItems(ResultItems resultItems) {
 		this.resultItems = resultItems;
 	}
+
 	/**
 	 * @return the statusCode
 	 */
 	public int getStatusCode() {
 		return statusCode;
 	}
+
 	/**
-	 * @param statusCode the statusCode to set
+	 * @param statusCode
+	 *            the statusCode to set
 	 */
-	public void setStatusCode(int statusCode) {
+	public Page setStatusCode(int statusCode) {
 		this.statusCode = statusCode;
+		return this;
 	}
-	/**
-	 * @return the targetRequests
-	 */
-	public List<String> getTargetRequests() {
-		return targetRequests;
-	}
-	/**
-	 * @param targetRequests the targetRequests to set
-	 */
-	public void setTargetRequests(List<String> targetRequests) {
-		this.targetRequests = targetRequests;
-	}
-	
-	public void putField(String key,Object value){
+
+	public Page putField(String key, Object value) {
 		resultItems.put(key, value);
+		return this;
 	}
-	
-	public void addTargetUrl(String targetUrl){
-		targetRequests.add(targetUrl);
-	}
-	
-	public void addTargetUrl(List<String> urls){
-		targetRequests.addAll(urls);
-	}
+
 	/**
 	 * @return the needCycleRequest
 	 */
 	public boolean isNeedCycleRequest() {
 		return needCycleRequest;
 	}
+
 	/**
-	 * @param needCycleRequest the needCycleRequest to set
+	 * @param needCycleRequest
+	 *            the needCycleRequest to set
 	 */
-	public void setNeedCycleRequest(boolean needCycleRequest) {
+	public Page setNeedCycleRequest(boolean needCycleRequest) {
 		this.needCycleRequest = needCycleRequest;
+		return this;
 	}
+
+	/**
+	 * @return the contentLength
+	 */
+	public long getContentLength() {
+		return contentLength;
+	}
+
+	/**
+	 * @param contentLength
+	 *            the contentLength to set
+	 */
+	public Page setContentLength(long contentLength) {
+		this.contentLength = contentLength;
+		return this;
+	}
+
+	/**
+	 * @return the isSkip
+	 */
+	public boolean isSkip() {
+		return isSkip;
+	}
+
+	/**
+	 * @param isSkip
+	 *            the isSkip to set
+	 */
+	public Page setSkip(boolean isSkip) {
+		this.isSkip = isSkip;
+		return this;
+	}
+
+	/**
+	 * @return the data
+	 */
+	public byte[] getData() {
+		return data;
+	}
+
+	/**
+	 * @param data
+	 *            the data to set
+	 */
+	public Page setData(byte[] data) {
+		this.data = data;
+		return this;
+	}
+
+	/**
+	 * @return the request
+	 */
+	public Request getRequest() {
+		return request;
+	}
+
+	/**
+	 * @param request
+	 *            the request to set
+	 */
+	public void setRequest(Request request) {
+		this.request = request;
+	}
+
+	/**
+	 * @return the targetRequest
+	 */
+	public List<Request> getTargetRequest() {
+		return targetRequest;
+	}
+
+	/**
+	 * @param targetRequest
+	 *            the targetRequest to set
+	 */
+	public Page addTargetRequest(List<Request> targetRequest) {
+		this.targetRequest.addAll(targetRequest);
+		return this;
+	}
+
+	public Page addTargetRequest(Request targetRequest) {
+		this.targetRequest.add(targetRequest);
+		return this;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "Page [request=" + request + ", rawText=" + rawText + ", data="
+				+ Arrays.toString(data) + ", resultItems=" + resultItems
+				+ ", statusCode=" + statusCode + ", targetRequest="
+				+ targetRequest + ", needCycleRequest=" + needCycleRequest
+				+ ", contentLength=" + contentLength + ", isSkip=" + isSkip
+				+ "]";
+	}
+
 }

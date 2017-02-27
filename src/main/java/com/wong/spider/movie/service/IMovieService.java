@@ -2,6 +2,8 @@ package com.wong.spider.movie.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+
 import com.wong.spider.movie.model.Movie;
 import com.wong.spider.movie.model.Torrent;
 
@@ -16,5 +18,9 @@ public interface IMovieService {
 	List<Torrent> findTorrentByName(String name);
 	
 	List<Movie> findMovieByName(String name);
+	
+	Page<Movie> findAllMoviePage(Integer pageNumber,Integer pageSize);
+	
+	void updateMovie(Movie movie);
 
 }

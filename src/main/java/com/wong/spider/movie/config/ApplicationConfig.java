@@ -19,8 +19,6 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import com.wong.spider.movie.PianyuanNet;
-import com.wong.spider.movie.PianyuanNet_V2;
 
 @Configuration
 @ComponentScan(basePackages="com.wong.spider.movie")//spring注释扫描目录
@@ -45,11 +43,6 @@ public class ApplicationConfig {
 	@Resource
     private Environment env;
 	
-	@Bean
-	public PianyuanNet pianyuanNet(){
-		return new PianyuanNet();
-	}
-
 	@Bean
 	public DataSource dataSource() {
 		BasicDataSource dataSource = new BasicDataSource();

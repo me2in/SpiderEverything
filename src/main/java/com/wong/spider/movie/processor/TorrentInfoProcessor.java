@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component;
 import us.codecraft.xsoup.Xsoup;
 
 import com.wong.spider.Page;
-import com.wong.spider.downloader.Downloader;
+import com.wong.spider.Request;
+import com.wong.spider.annotation.Processor;
 import com.wong.spider.movie.PianyuanUtils;
 import com.wong.spider.movie.model.Movie;
 import com.wong.spider.movie.model.Torrent;
@@ -23,6 +24,7 @@ import com.wong.spider.processor.PageProcessor;
 import com.wong.spider.util.MyFileUtils;
 import com.wong.spider.util.MyStringUtils;
 @Component
+@Processor(domain="http://pianyuan.net")
 public class TorrentInfoProcessor implements PageProcessor {
 	
 	@Resource
@@ -33,11 +35,11 @@ public class TorrentInfoProcessor implements PageProcessor {
 	@Override
 	public boolean canProcess(Page page) {
 		String pattren = "http://pianyuan.net/r_(\\w)*.html";
-		return page.getUrl().matches(pattren);
+		return page.getRequest().getUrl().matches(pattren);
 	}
 
 	@Override
-	public void process(Page page,Downloader downloader) {
+	public void process(Page page) {
 		
 		Torrent torrent = new Torrent();
 		
@@ -62,12 +64,14 @@ public class TorrentInfoProcessor implements PageProcessor {
 		page.putField("movieName", movieName);
 		page.putField("torrent", torrent);
 		
-		logger.info("电影名：{}",movieName);
-		logger.info("torrent :{}",torrent);
+		logger.info("torrent :{}",torrent.getFileName());
+		
+		String fileSavePath = PianyuanUtils.FILE_SAVE_BASEDIR+File.separator+movieName+File.separator+torrent.getType()+File.separator+torrent.getFileName()+".torrent";
+		page.addTargetRequest(Request.RequestFile(torrent.getUrl()).setFileSavePath(fileSavePath).setPriority(3));
 	}
 
 	@Override
-	public void serializer(Page page,Downloader downloader) {
+	public void serializer(Page page) {
 		String movieName = page.getResultItems().get("movieName");
 		Torrent torrent = page.getResultItems().get("torrent");
 		

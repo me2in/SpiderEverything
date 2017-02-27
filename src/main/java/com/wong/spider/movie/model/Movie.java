@@ -1,5 +1,6 @@
 package com.wong.spider.movie.model;
 
+import java.io.Serializable;
 import java.util.List;
 
 import javax.persistence.Column;
@@ -12,8 +13,12 @@ import javax.persistence.Transient;
 
 @Entity
 @Table(name="movie")
-public class Movie {
+public class Movie implements Serializable{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1368324330843647058L;
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Integer movieId;

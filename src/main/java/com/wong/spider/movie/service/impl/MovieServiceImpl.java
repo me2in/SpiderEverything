@@ -5,6 +5,8 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import com.wong.spider.movie.dao.MovieAreaDao;
@@ -122,5 +124,13 @@ public class MovieServiceImpl implements IMovieService {
 	@Override
 	public void saveMovie(Movie movie) {
 		saveMovie(movie,movie.getType(), movie.getStarring(), movie.getDirector(), movie.getWriter(), movie.getArea());
+	}
+	@Override
+	public Page<Movie> findAllMoviePage(Integer pageNumber, Integer pageSize) {
+		return movieDao.findAll(new PageRequest(pageNumber, pageSize));
+	}
+	@Override
+	public void updateMovie(Movie movie) {
+		movieDao.saveAndFlush(movie);
 	}
 }

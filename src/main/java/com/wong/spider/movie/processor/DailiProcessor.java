@@ -1,7 +1,14 @@
 package com.wong.spider.movie.processor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -21,10 +28,11 @@ import org.springframework.stereotype.Component;
 import us.codecraft.xsoup.Xsoup;
 
 import com.wong.spider.Page;
-import com.wong.spider.downloader.Downloader;
+import com.wong.spider.Request;
+import com.wong.spider.annotation.Processor;
 import com.wong.spider.processor.PageProcessor;
 import com.wong.spider.util.MyFileUtils;
-
+@Processor(domain="http://www.youdaili.net")
 @Component
 public class DailiProcessor implements PageProcessor {
 	
@@ -34,46 +42,77 @@ public class DailiProcessor implements PageProcessor {
 	private  Header accept_encoding = new BasicHeader("Accept-Encoding","gzip, deflate, sdch, br");
 	private  Header accept_Language = new BasicHeader("Accept-Language","zh-CN,zh;q=0.8");
 	private  Header connection = new BasicHeader("Connection","keep-alive");
+	private ExecutorService es = Executors.newFixedThreadPool(30);//开启10个线程校验
 
 	@Override
 	public boolean canProcess(Page page) {
-		return page.getUrl().matches("http://www.youdaili.net/Daili/(guonei|http)/([0-9]+).html");
+		return page.getRequest().getUrl().matches("http://www.youdaili.net/Daili/(guonei|http)/(([0-9]+).html)?") 
+				|| page.getRequest().getUrl().equals("http://www.youdaili.net/");
 	}
 
 	@Override
-	public void process(Page page,Downloader downloader) {
+	public void process(Page page) {
 		Document doc = Jsoup.parse(page.getRawText());
 		
 		List<String> links = Xsoup.select(doc,"//a/@href").list();
-		page.addTargetUrl(selectList("http://www.youdaili.net/Daili/(guonei|http)/([0-9|_]+).html", links));
+		page.addTargetRequest(selectList("http://www.youdaili.net/Daili/(guonei|http)/(([0-9_]+).html)?", links));
 		
 		List<String> plist = Xsoup.select(doc, "/html/body/div[5]/div[1]/div[1]/div[3]/div[3]/p/text()").list();
-		List<String[]> proxyList = new ArrayList<String[]>();
-		for(String pp : plist){
-			String ip = pp.substring(0, pp.indexOf(":"));
-			String port = pp.substring(pp.indexOf(":")+1, pp.indexOf("@"));
-			boolean isAvailable = vaildProxy(ip,Integer.valueOf(port));
-			if(isAvailable){
-				//加入代理池
-				System.out.println(String.format("%s:%s", ip,port));
+		
+		if(plist !=null && !plist.isEmpty()){
+			Map<String[],Future<Boolean>> allProxys = new HashMap<String[],Future<Boolean>>();
+			for(String pp : plist){
+				if(pp.indexOf(":")<0){
+					continue;
+				}
+				final String ip = pp.substring(0, pp.indexOf(":"));
+				final String port = pp.substring(pp.indexOf(":")+1, pp.indexOf("@"));
 				String[] proxy = {ip,port};
-				proxyList.add(proxy);
+				allProxys.put(proxy,es.submit(new Callable<Boolean>() {
+					
+					@Override
+					public Boolean call() throws Exception {
+						return vaildProxy(ip,Integer.valueOf(port)) && vaildProxy(ip,Integer.valueOf(port));
+					}
+				}));
 			}
+			
+			List<String[]> proxyList = new ArrayList<String[]>();
+			for(Map.Entry<String[],Future<Boolean>> entity : allProxys.entrySet()){
+				try {
+					if(entity.getValue().get()){
+						proxyList.add(entity.getKey());
+					}
+				} catch (InterruptedException | ExecutionException e) {
+					e.printStackTrace();
+				}
+			}
+			page.putField("proxyList", proxyList);
 		}
-		page.putField("proxyList", proxyList);
 
 	}
 
 	@Override
-	public void serializer(Page page,Downloader downloader) {
+	public void serializer(Page page) {
 		
 		List<String[]> proxyList = page.getResultItems().get("proxyList");
+		
 		StringBuilder sb = new StringBuilder();
-		for(String[] proxy : proxyList){
-			sb.append(proxy[0]+":"+proxy[1]+"\r\n");
+		if(proxyList !=null){
+			for(String[] proxy : proxyList){
+				sb.append(String.format("%s:%s\r\n", proxy[0],proxy[1]));
+			}
+			MyFileUtils.writeStringAppend("data/proxy.txt", sb.toString());
 		}
-		MyFileUtils.writeStringAppend("F:/proxy.txt", sb.toString());
-
+		
+//		if(proxyList !=null){
+//			List<Proxy> proxys = new ArrayList<Proxy>();
+//			for(String[] proxy : proxyList){
+//				Proxy newProxy = new Proxy(proxy[0],Integer.valueOf(proxy[1]));
+//				proxys.add(newProxy);
+//			}
+//			ProxyCache.produce(proxys);
+//		}
 	}
 	
 	private boolean vaildProxy(String ip,int port){
@@ -126,11 +165,11 @@ public class DailiProcessor implements PageProcessor {
 		return statusCode==200;
 	}
 	
-	private List<String> selectList(String regex, List<String> strings) {
-        List<String> results = new ArrayList<String>();
+	private List<Request> selectList(String regex, List<String> strings) {
+        List<Request> results = new ArrayList<Request>();
         for (String string : strings) {
         	if(string.matches(regex)){
-        		results.add(string);
+        		results.add(Request.RequestHtml(string).setUseProxy(false));
         	}
         }
         return results;

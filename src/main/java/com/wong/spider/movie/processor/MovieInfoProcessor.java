@@ -17,35 +17,38 @@ import org.springframework.stereotype.Component;
 import us.codecraft.xsoup.Xsoup;
 
 import com.wong.spider.Page;
-import com.wong.spider.downloader.Downloader;
+import com.wong.spider.Request;
+import com.wong.spider.annotation.Processor;
 import com.wong.spider.movie.PianyuanUtils;
 import com.wong.spider.movie.model.Movie;
 import com.wong.spider.movie.service.IMovieService;
 import com.wong.spider.processor.PageProcessor;
-import com.wong.spider.util.HttpClientUtils;
 import com.wong.spider.util.MyFileUtils;
 import com.wong.spider.util.MyStringUtils;
 
 @Component
+@Processor(domain="http://pianyuan.net")
 public class MovieInfoProcessor implements PageProcessor {
 
 	@Resource
 	private IMovieService movieService;
 	
+	private static String pattern = "http://pianyuan.net/m_(\\w)*.html";
+	
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	
 	@Override
 	public boolean canProcess(Page page) {
-		String pattern = "http://pianyuan.net/m_(\\w)*.html";
-		return page.getUrl().matches(pattern);
+		
+		return page.getRequest().getUrl().matches(pattern);
 	}
 
 	@Override
-	public void process(Page page,Downloader downloader) {
+	public void process(Page page) {
 		
 		Movie  movie = new Movie();
 		
-		movie.setDetailUrl(page.getUrl());
+		movie.setDetailUrl(page.getRequest().getUrl());
 		
 		Document doc = Jsoup.parse(page.getRawText());
 		String name = MyStringUtils.converunctuationEng2Chinese(Xsoup.select(doc, "/html/body/div[2]/div/div/div/h1/text()").get().trim());
@@ -84,14 +87,17 @@ public class MovieInfoProcessor implements PageProcessor {
 		page.putField("movie", movie);
 		//种子信息开始,不再区分种子的类型，也不再解析种子的类型
 		List<String> realTorrentPath = Xsoup.select(doc, "//*[@id='main-container']/div/div[1]/div[2]/table/tbody/tr/td[1]/a/@href").list();
-		page.addTargetUrl(PianyuanUtils.fixUrl(realTorrentPath));
+//		page.addTargetUrl(PianyuanUtils.fixUrl(realTorrentPath));
+		page.addTargetRequest(PianyuanUtils.fixRequest(realTorrentPath));
+		String fileSavePath = PianyuanUtils.FILE_SAVE_BASEDIR+File.separator+movie.getName()+File.separator+page.getResultItems().get("posterName");
+		page.addTargetRequest(Request.RequestImage(movie.getPoster()).setFileSavePath(fileSavePath));//将海报的请求申请放入到请求队列
 		
-		logger.info("获取到电影详情:{}",movie);
-		logger.info("种子详情链接:{}",realTorrentPath);
+		logger.info("获取到电影详情:{}",movie.getName());
+//		logger.info("种子详情链接:{}",realTorrentPath);
 	}
 
 	@Override
-	public void serializer(Page page,Downloader downloader) {
+	public void serializer(Page page) {
 		
 		Movie movie = page.getResultItems().get("movie");
 		List<Movie> dbM = movieService.findMovieByName(movie.getName());
@@ -100,7 +106,6 @@ public class MovieInfoProcessor implements PageProcessor {
 		}
 		
 		String dir = PianyuanUtils.FILE_SAVE_BASEDIR+File.separator+movie.getName();
-		String posterName = page.getResultItems().get("posterName");
 		StringBuilder sb = new StringBuilder();
 		sb.append("\r\n[电影信息]\r\n");
 		sb.append(String.format("    [名字]:[%s]\r\n", movie.getName()));
@@ -115,8 +120,9 @@ public class MovieInfoProcessor implements PageProcessor {
 		sb.append(String.format("    [豆瓣]:[%s]\r\n\r\n\r\n", movie.getDouban()));
 		sb.append("[种子列表]\r\n\r\n");
 		MyFileUtils.writeString(dir+File.separator+"movie_info.txt", sb.toString());
+//		String posterName = page.getResultItems().get("posterName");
 //		downloader.dowmloadFile(movie.getPoster(), dir+File.separator+posterName, true);
-		MyFileUtils.writeFile(dir+File.separator+posterName, HttpClientUtils.doGetImage(movie.getPoster()));
+//		MyFileUtils.writeFile(dir+File.separator+posterName, HttpClientUtils.doGetImage(movie.getPoster()));
 		
 	}
 
