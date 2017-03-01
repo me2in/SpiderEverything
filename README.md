@@ -7,6 +7,7 @@ SpiderEverything各种爬虫合集，目前已实现对某电影资源网爬取�
 * 4.整合了Spring。具体例子可查看[com.wong.spider.movie](https://github.com/Wang-Juntao/SpiderEverything/tree/master/src/main/java/com/wong/spider/movie "com.wong.spider.movie")爬虫实例使用Spring-data-jpa实现了数据的保存
 * 5.去掉了webmagic的pipeline概念，直接整合到PageProcessor中，并且可以同一网站对应多个processor。更灵活
 * 6.请求可以设置优先级，也可以设置是否使用代理
+* 7.支持热启动（beta），每隔10分钟可自动保存当前状态，下次再启动不必从头开始
 
 ## 待实现功能
 * 1.代理自动发现
